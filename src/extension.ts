@@ -66,7 +66,16 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 				), token.tokenType, token.tokenModifiers);
 			})
 		});
+
 		return builder.build();
+	}
+
+	private _encodeTokenModifiers(tokenType: string): string[] {
+		switch(tokenType) {
+			case 'objective':
+				return ['readonly']
+		}
+		return []
 	}
 
 	private _encodeTokenType(tokenType: string): string | undefined {
@@ -154,35 +163,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 	private async _parseText(text: string, uri: vscode.Uri): Promise<IParsedToken[][]> {
 		if (!extension) return []
 
-		let json = await new Promise<string>((resolve, reject) => {
-			PythonShell.run(this.asAbsolutePath('server/main.py'), { args: [text] }, (err, output) => {
-				if (err != undefined) {
-					const traceback = err.traceback.toString();
-
-					const exp = RegExp(/line ([0-9]+), column ([0-9]+): /g)
-
-					const result = exp.exec(traceback)
-					if (result == null) {
-						resolve('error')
-						console.log(err)
-						return;
-					}
-
-					const actualError = traceback.substring(exp.lastIndex - result[0].length, traceback.indexOf('The above exception was the', exp.lastIndex))
-					console.log(actualError)
-					vscode.window.showErrorMessage(actualError)
-					resolve('error')
-					return
-				}
-				if (output === undefined) {
-					resolve('')
-					return
-				}
-				const json = output.join('')
-				resolve(json)
-
-			})
-		})
+		let json = await this.getTokensJson(text)
 		if (json === 'error') {
 			if (prevTokens[0] === uri.toString()) {
 				return prevTokens[1]
@@ -210,7 +191,10 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			const lines = text.split('\n').slice(t.start[1] - 1, t.end[1])
 
 			for (let lineNum = 0; lineNum < lines.length; lineNum++) {
-				if (lines[lineNum] === '') continue;
+				if (lines[lineNum] === '' || lines[lineNum].replaceAll(/[\s]/g, '').startsWith('#')) {
+					console.log('no token')
+					continue;
+				}
 				const idx = t.start[1] + lineNum - 1
 				const token = {
 					tokenType: type,
@@ -219,7 +203,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 						lines.length === 1 ?
 							t.end[2] :
 							lines[lineNum].length + (lineNum === lines.length - 1 ? 1 : 0)],
-					tokenModifiers: []
+					tokenModifiers: this._encodeTokenModifiers(t.type)
 				}
 				if (vsTokens[idx] === undefined) vsTokens[idx] = [token]
 				else {
@@ -236,7 +220,39 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 	}
 
 
-	private cullOverlap(vsTokens: IParsedToken[][], idx: number, token: { tokenType: string; range: number[]; tokenModifiers: never[]; }) {
+	private getTokensJson(text: string) {
+		return new Promise<string>((resolve, reject) => {
+			PythonShell.run(this.asAbsolutePath('server/main.py'), { args: [text] }, (err, output) => {
+				if (err != undefined) {
+					const traceback = err.traceback.toString();
+
+					const exp = RegExp(/line ([0-9]+), column ([0-9]+): /g);
+
+					const result = exp.exec(traceback);
+					if (result == null) {
+						resolve('error');
+						console.log(err);
+						return;
+					}
+
+					const actualError = traceback.substring(exp.lastIndex - result[0].length, traceback.indexOf('The above exception was the', exp.lastIndex));
+					console.log(actualError);
+					vscode.window.showErrorMessage(actualError);
+					resolve('error');
+					return;
+				}
+				if (output === undefined) {
+					resolve('');
+					return;
+				}
+				const json = output.join('');
+				resolve(json);
+
+			});
+		});
+	}
+
+	private cullOverlap(vsTokens: IParsedToken[][], idx: number, token: IParsedToken) {
 		let tempTokens: IParsedToken[] = [];
 		vsTokens[idx].forEach((target, targetIdx, arr) => {
 			const isLower = target.range[0] <= token.range[0];

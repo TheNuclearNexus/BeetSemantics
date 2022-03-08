@@ -8,7 +8,7 @@
 		},
 		{
 			"name":"comment",
-			"match": "#([\\S\\s][^\\n]+)"
+			"match": "([\\s]+)?#([\\s\\S]+)[\\n]"
 		}
 	],
 	"scopeName": "source.mcfunction"
