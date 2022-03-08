@@ -155,14 +155,14 @@ class TokenHighlighter(Reducer):
     def value(self, node: AstValue):
         self.addTokenFromNode(snake_case(type(node.value).__name__), node, node.value)
         
-    @rule(*(AstAttribute, AstTargetAttribute))
+    @rule(AstAttribute, AstTargetAttribute)
     def interpolation(self, node: AstAttribute | AstTargetAttribute):
         if(isinstance(node.value, AstValue)):
             self.addTokenFromNode(snake_case(node.__class__.__name__[3:]), node, node.value.value)
         else:
             self.addTokenFromNode(snake_case(node.__class__.__name__[3:]), node)
         
-    @rule(*(AstIdentifier, AstTargetIdentifier, AstImportedIdentifier))
+    @rule(AstIdentifier, AstTargetIdentifier, AstImportedIdentifier)
     def indentifier(self, node: AstIdentifier | AstTargetIdentifier | AstImportedIdentifier):
         self.addTokenFromNode('identifier', node, node.value)
         
