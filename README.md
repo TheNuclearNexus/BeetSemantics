@@ -1,26 +1,17 @@
-# Semantic tokens sample
-
-This is an extension sample showing a very simple semantic tokens provider. This semantic tokens provider always returns all the tokens in a file.
-
-For more background on semantic highlighting read [here](https://code.visualstudio.com/api/language-extensions/semantic-highlight-guide)
-
-![Screenshot](demo.png)
+# Beet Semantics
+Proof of concept semantic highlighter for [beet](https://mcbeet.dev)
 
 ## How to run
-
-Launch the extension and open the file `sample/sample.semanticLanguage` and use the following settings:
-
-```jsonc
-"editor.semanticTokenColorCustomizations": {
-	"enabled": true, // enable for all themes
-	"rules": {
-		"*.static": {
-			"foreground": "#ff0000",
-			"fontStyle": "bold"
-		},
-		"type": {
-			"foreground": "#00aa00"
-		}
-	}
-}
+1) Clone the repo
 ```
+$> git clone https://github.com/TheNuclearNexus/BeetSemantics
+```
+2) Install the node packages
+```
+$> npm i
+```
+3) Install `beet` and `mecha` if you haven't
+```
+$> pip install beet mecha
+```
+4) Press `F5` or `Toolbar> Run> Start Debugging`
