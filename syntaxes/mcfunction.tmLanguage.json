@@ -1,0 +1,15 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "MCFunction",
+	"patterns": [
+		{
+			"name":"markup.bold",
+			"match": "#\\s?@public"
+		},
+		{
+			"name":"comment",
+			"match": "#([\\S\\s][^\\n]+)"
+		}
+	],
+	"scopeName": "source.mcfunction"
+}
