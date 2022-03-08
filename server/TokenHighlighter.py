@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from importlib.abc import SourceLoader
 import json
 from sre_compile import isstring
-from typing import Dict, List, overload
+from typing import Dict, List, Union, overload
 from mecha import *
 from mecha.contrib.bolt import *
 from beet.core.utils import snake_case
@@ -156,14 +156,14 @@ class TokenHighlighter(Reducer):
         self.addTokenFromNode(snake_case(type(node.value).__name__), node, node.value)
         
     @rule(AstAttribute, AstTargetAttribute)
-    def interpolation(self, node: AstAttribute | AstTargetAttribute):
+    def interpolation(self, node: Union[AstAttribute, AstTargetAttribute]):
         if(isinstance(node.value, AstValue)):
             self.addTokenFromNode(snake_case(node.__class__.__name__[3:]), node, node.value.value)
         else:
             self.addTokenFromNode(snake_case(node.__class__.__name__[3:]), node)
         
     @rule(AstIdentifier, AstTargetIdentifier, AstImportedIdentifier)
-    def indentifier(self, node: AstIdentifier | AstTargetIdentifier | AstImportedIdentifier):
+    def indentifier(self, node: Union[AstIdentifier, AstTargetIdentifier, AstImportedIdentifier]):
         self.addTokenFromNode('identifier', node, node.value)
         
     @rule(AstInterpolation)
