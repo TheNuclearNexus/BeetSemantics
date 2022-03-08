@@ -71,7 +71,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 	}
 
 	private _encodeTokenModifiers(tokenType: string): string[] {
-		switch(tokenType) {
+		switch (tokenType) {
 			case 'objective':
 				return ['readonly']
 		}
@@ -222,7 +222,13 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 
 	private getTokensJson(text: string) {
 		return new Promise<string>((resolve, reject) => {
-			PythonShell.run(this.asAbsolutePath('server/main.py'), { args: [text] }, (err, output) => {
+			const python = vscode.workspace.getConfiguration("python")
+			let path: string | undefined = python.get("pythonPath")
+			
+			if (path === undefined || !fs.existsSync(path))
+				path = python.get("defaultInterpreterPath")
+
+			PythonShell.run(this.asAbsolutePath('server/main.py'), { args: [text], pythonPath: path }, (err, output) => {
 				if (err != undefined) {
 					const traceback = err.traceback.toString();
 
@@ -250,6 +256,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 
 			});
 		});
+
 	}
 
 	private cullOverlap(vsTokens: IParsedToken[][], idx: number, token: IParsedToken) {
