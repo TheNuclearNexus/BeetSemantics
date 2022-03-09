@@ -79,7 +79,7 @@ as @a at @s if block ~ ~-1 ~ #wool give @s stone{
     display: {
         Name: something
     }
-}
+} 
 
 with_tuples = ((((())))) + (1,2,3) + (4,)
 say with_tuples
@@ -147,7 +147,7 @@ execute
     at @s                        # start at their feet.
     anchored eyes                # Looking through their eyes,
     facing 0 0 0                 # face perfectly at the target
-    anchored feet                # (go back to the feet)
+    anchored feet                #/ (go back to the feet)
     positioned ^ ^ ^1            # and move one block forward.
     rotated as @s                # Face the direction the player
                                  # is actually facing,
@@ -195,6 +195,8 @@ for node in generate_tree(range(8), name="small_tree"):
             if score @s thingy matches node.range function node.children
         else:
             if score @s thingy matches node.range say node.value
+
+# hi
 
 def try_unpacking():
     a = [1, *"abc", 2]

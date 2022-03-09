@@ -110,7 +110,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			case 'message_text':
 			case 'str':
 			case 'nbt_value':
-			// case 'value':
+				// case 'value':
 				return 'string'
 			case 'word':
 			case 'key':
@@ -147,10 +147,10 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			case 'true':
 			case 'bool':
 			case 'format_string':
-			case 'nbt_compound':
 			case 'interpolation':
 				return 'macro'
 			case 'unpack':
+			case 'nbt_compound':
 			case 'slice':
 			case 'json_array':
 			case 'json_object':
@@ -211,9 +211,9 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 					tokenType: type,
 					range: [
 						(lineNum === 0 ? t.start[2] : 1),
-						lines.length-1 === lineNum || lines.length === 1 ?
+						lines.length - 1 === lineNum || lines.length === 1 ?
 							t.end[2] :
-							lines[lineNum].length + (lineNum === lines.length - 1 ? 1 : 0)],
+							lines[lineNum].lastIndexOf('#') !== -1 ? lines[lineNum].lastIndexOf('#') : lines[lineNum].length],
 					tokenModifiers: this._encodeTokenModifiers(t.type),
 					originalType: t.type
 				}
