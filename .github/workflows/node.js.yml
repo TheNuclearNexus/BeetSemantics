@@ -22,7 +22,7 @@ jobs:
         node-version: 16.x
         cache: 'npm'
     - run: npm ci
-    - run: npm i vsce
+    - run: npm i -g vsce
     - run: vsce package
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.0.0
