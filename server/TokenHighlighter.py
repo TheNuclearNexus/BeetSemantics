@@ -12,7 +12,7 @@ from tokenstream import SourceLocation
 simple_types = (
     AstAdvancementPredicate,
     AstAssignment,
-    # AstAttribute,
+    AstAttribute,
     AstBlock,
     AstBlockMarkerParticleParameters,
     AstBlockParticleParameters,
@@ -38,8 +38,8 @@ simple_types = (
     AstFunctionSignatureArgument,
     AstGamemode,
     AstGreedy,
-    # AstIdentifier,
-    # AstImportedIdentifier,
+    AstIdentifier,
+    AstImportedIdentifier,
     # AstInterpolation,
     AstItem,
     AstItemParticleParameters,
@@ -90,8 +90,8 @@ simple_types = (
     AstString,
     AstSwizzle,
     AstTarget,
-    # AstTargetAttribute,
-    # AstTargetIdentifier,
+    AstTargetAttribute,
+    AstTargetIdentifier,
     AstTargetItem,
     AstTeam,
     AstTime,
@@ -142,11 +142,15 @@ class TokenHighlighter(Reducer):
         
     @rule(AstCall)
     def call(self, node: AstCall):
-        if(isinstance(node, AstAttribute)):
-            self.addTokenFromNode("method_call", node, node.name)
-        elif(isinstance(node, AstIdentifier)):
-            self.addTokenFromNode("function_call", node, node.value)
-    
+        call_name = ''
+        if(isinstance(node.value, AstAttribute)):
+            call_name = node.value.name
+        elif(isinstance(node.value, AstIdentifier)):
+            call_name = node.value.value
+            
+        self.addToken('call', node.location, node.end_location)
+        self.addToken('call_identifier', node.value.location, SourceLocation(node.value.location.pos, node.value.end_location.lineno, node.value.end_location.colno), call_name)
+            
     @rule(AstCommand)
     def command(self, node: AstCommand):
         self.addTokenFromNode("command", node, node.identifier)
@@ -154,18 +158,8 @@ class TokenHighlighter(Reducer):
     @rule(AstValue)
     def value(self, node: AstValue):
         self.addTokenFromNode(snake_case(type(node.value).__name__), node, node.value)
-        
-    @rule(AstAttribute, AstTargetAttribute)
-    def interpolation(self, node: Union[AstAttribute, AstTargetAttribute]):
-        if(isinstance(node.value, AstValue)):
-            self.addTokenFromNode(snake_case(node.__class__.__name__[3:]), node, node.value.value)
-        else:
-            self.addTokenFromNode(snake_case(node.__class__.__name__[3:]), node)
-        
-    @rule(AstIdentifier, AstTargetIdentifier, AstImportedIdentifier)
-    def indentifier(self, node: Union[AstIdentifier, AstTargetIdentifier, AstImportedIdentifier]):
-        self.addTokenFromNode('identifier', node, node.value)
-        
+
+    
     @rule(AstInterpolation)
     def interpolation(self, node: AstInterpolation):    
         self.addTokenFromNode(snake_case(node.__class__.__name__[3:]), node, node.value.__class__.__name__)
@@ -178,6 +172,8 @@ class TokenHighlighter(Reducer):
 
     @rule(*simple_types)
     def simpleNodes(self, node: AstNode):
+        if(type(node) not in simple_types): return
+        
         self.addTokenFromNode(snake_case(node.__class__.__name__[3:]), node)
         
         

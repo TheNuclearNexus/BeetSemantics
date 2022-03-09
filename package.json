@@ -1,9 +1,10 @@
 {
 	"name": "highlighter",
-	"displayName": "semantic-tokens-sample",
-	"description": "Sample showing the Semantic Tokens Provider API",
+	"displayName": "Beet Semantics",
+	"description": "Proof of concept semantic highlighter for beet",
 	"version": "0.0.1",
 	"publisher": "mcbeet",
+	"author": "TheNuclearNexus",
 	"private": true,
 	"license": "MIT",
 	"repository": {
@@ -14,7 +15,7 @@
 		"vscode": "^1.42.0"
 	},
 	"categories": [
-		"Other"
+		"Programming Languages"
 	],
 	"activationEvents": [
 		"onLanguage:mcfunction"

@@ -36,6 +36,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 interface IParsedToken {
 	range: number[];
+	originalType: string;
 	tokenType: string;
 	tokenModifiers: string[];
 }
@@ -60,10 +61,12 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 		const builder = new vscode.SemanticTokensBuilder(legend);
 		allTokens.forEach((tokens, line) => {
 			tokens.forEach((token) => {
-				builder.push(new vscode.Range(
-					new vscode.Position(line, token.range[0] - 1),
-					new vscode.Position(line, token.range[1] - 1)
-				), token.tokenType, token.tokenModifiers);
+				if (token.tokenType !== 'none') {
+					builder.push(new vscode.Range(
+						new vscode.Position(line, token.range[0] - 1),
+						new vscode.Position(line, token.range[1] - 1)
+					), token.tokenType, token.tokenModifiers);
+				}
 			})
 		});
 
@@ -72,6 +75,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 
 	private _encodeTokenModifiers(tokenType: string): string[] {
 		switch (tokenType) {
+			case 'entity_anchor':
 			case 'objective':
 				return ['readonly']
 		}
@@ -93,10 +97,11 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			case 'resource_location':
 			case 'resource':
 			case 'function_signature':
-			case 'call':
+			case 'call_identifier':
 			case 'block':
 			case 'item':
 			case 'target_item':
+			case 'call':
 				return 'function'
 			case 'text':
 			case 'string':
@@ -104,14 +109,12 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			case 'json_object_key':
 			case 'message_text':
 			case 'str':
-			case 'interpolation':
 			case 'nbt_value':
-			case 'value':
+			// case 'value':
 				return 'string'
 			case 'word':
 			case 'key':
 			case 'entity_anchor':
-			case 'function_signature_argument':
 				return 'property'
 			case 'selector':
 			case 'player_name':
@@ -119,12 +122,12 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			case 'exclamation':
 			case 'equal':
 			case 'operator':
-			case 'expression_binary':
-			case 'expression_unary':
 				return 'operator'
+			case 'function_signature_argument':
 			case 'objective':
 			case 'target_identifier':
 			case 'target_attribute':
+			case 'imported_identifier':
 			case 'identifier':
 			case 'attribute':
 			case 'selector_argument':
@@ -144,14 +147,23 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			case 'true':
 			case 'bool':
 			case 'format_string':
+			case 'nbt_compound':
+			case 'interpolation':
+				return 'macro'
+			case 'unpack':
+			case 'slice':
 			case 'json_array':
 			case 'json_object':
-			case 'assignment':
 			case 'json_object_entry':
 			case 'list':
-			case 'nbt_compound':
 			case 'lookup':
-				return 'macro'
+			case 'assignment':
+			case 'tuple':
+			case 'expression_binary':
+			case 'expression_unary':
+			case 'nbt_compound_entry':
+			case 'nbt_list':
+				return 'none'
 
 			// default:
 			// 	return 'keyword'
@@ -172,7 +184,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			}
 		}
 		json = json.substring(0, json.length / 2)
-		// fs.writeFileSync(path.join(extension.extensionPath, 'out.json'), JSON.stringify(JSON.parse(json), null, 2))
+		// fs.writeFileSync(this.asAbsolutePath('input.json'), JSON.stringify(JSON.parse(json), null, 2))
 		let tempTokens: Token[] = JSON.parse(json)
 		tempTokens = tempTokens.sort(t => t.end[0] - t.start[0]).reverse()
 		let vsTokens: IParsedToken[][] = new Array(text.includes('\n') ? text.split('\n').length + 1 : 1)
@@ -183,7 +195,6 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			if (t.type === 'whitespace' || t.type === 'newline' || t.type === 'indent' || t.type === 'escape') continue;
 			let type = this._encodeTokenType(t.type)
 			if (type === undefined) {
-				type = 'regexp'
 				if (!unknownToken.includes(t.type)) unknownToken.push(t.type)
 				continue;
 			}
@@ -192,7 +203,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 
 			for (let lineNum = 0; lineNum < lines.length; lineNum++) {
 				if (lines[lineNum] === '' || lines[lineNum].replaceAll(/[\s]/g, '').startsWith('#')) {
-					console.log('no token')
+					console.log('no token', t)
 					continue;
 				}
 				const idx = t.start[1] + lineNum - 1
@@ -200,10 +211,11 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 					tokenType: type,
 					range: [
 						(lineNum === 0 ? t.start[2] : 1),
-						lines.length === 1 ?
+						lines.length-1 === lineNum || lines.length === 1 ?
 							t.end[2] :
 							lines[lineNum].length + (lineNum === lines.length - 1 ? 1 : 0)],
-					tokenModifiers: this._encodeTokenModifiers(t.type)
+					tokenModifiers: this._encodeTokenModifiers(t.type),
+					originalType: t.type
 				}
 				if (vsTokens[idx] === undefined) vsTokens[idx] = [token]
 				else {
@@ -212,9 +224,9 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			}
 		}
 
-		console.log(vsTokens[0])
 		prevTokens = [uri.toString(), vsTokens]
 		console.log(unknownToken.sort())
+		// fs.writeFileSync(this.asAbsolutePath('out.json'), JSON.stringify(vsTokens, null, 2))
 		// console.log(`Result: ${result}`)
 		return vsTokens
 	}
@@ -224,7 +236,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 		return new Promise<string>((resolve, reject) => {
 			const python = vscode.workspace.getConfiguration("python")
 			let path: string | undefined = python.get("pythonPath")
-			
+
 			if (path === undefined || !fs.existsSync(path))
 				path = python.get("defaultInterpreterPath")
 
@@ -270,14 +282,16 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 					tempTokens.push({
 						tokenType: target.tokenType,
 						range: [target.range[0], token.range[0]],
-						tokenModifiers: target.tokenModifiers
+						tokenModifiers: target.tokenModifiers,
+						originalType: target.originalType
 					});
 
 				if (target.range[1] != token.range[1])
 					tempTokens.push({
 						tokenType: target.tokenType,
 						range: [token.range[1], target.range[1]],
-						tokenModifiers: target.tokenModifiers
+						tokenModifiers: target.tokenModifiers,
+						originalType: target.originalType
 					});
 			} else {
 				tempTokens.push(target);

@@ -9,6 +9,10 @@
 		{
 			"name":"comment",
 			"match": "([\\s]+)?#([\\s\\S]+)[\\n]"
+		},
+		{
+			"name":"markup.raw",
+			"match": "[()\\[\\]{}]"
 		}
 	],
 	"scopeName": "source.mcfunction"

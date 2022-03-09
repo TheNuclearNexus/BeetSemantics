@@ -3,3 +3,6 @@ node_modules
 .vscode-test/
 server/__pycache__/
 *.vsix
+
+out.json
+input.json
