@@ -4,7 +4,7 @@
 	"patterns": [
 		{
 			"name":"markup.bold",
-			"match": "#\\s?@public"
+			"match": "#\\s?@([\\s\\S]+)"
 		},
 		{
 			"name":"comment",

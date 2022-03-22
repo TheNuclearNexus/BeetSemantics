@@ -77,6 +77,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 		switch (tokenType) {
 			case 'entity_anchor':
 			case 'objective':
+			case 'team':
 				return ['readonly']
 		}
 		return []
@@ -125,6 +126,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 				return 'operator'
 			case 'function_signature_argument':
 			case 'objective':
+			case 'team':
 			case 'target_identifier':
 			case 'target_attribute':
 			case 'imported_identifier':
@@ -140,6 +142,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			case 'scoreboard_slot':
 			case 'item_slot':
 			case 'vector3':
+			case 'time':
 				return 'number'
 			case 'colon':
 				return 'label'
