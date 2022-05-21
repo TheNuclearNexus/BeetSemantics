@@ -4,6 +4,7 @@ import * as fs from 'fs'
 import { PythonShell } from 'python-shell';
 import * as path from 'path'
 import fetch from 'node-fetch';
+import { encodeTokenType } from './encoder';
 const tokenTypes = new Map<string, number>();
 const tokenModifiers = new Map<string, number>();
 
@@ -78,102 +79,43 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			case 'entity_anchor':
 			case 'objective':
 			case 'team':
+			case 'wildcard':
 				return ['readonly']
 		}
 		return []
 	}
 
-	private _encodeTokenType(tokenType: string): string | undefined {
-		// if (tokenTypes.has(tokenType)) {
-		// 	return tokenType;
-		// } else if (tokenType === 'notInLegend') {
-		// 	return tokenTypes.size + 2;
-		// }
 
-		switch (tokenType) {
-			case 'literal':
-			case 'command':
-			case 'keyword':
-				return 'keyword'
-			case 'resource_location':
-			case 'resource':
-			case 'function_signature':
-			case 'call_identifier':
-			case 'block':
-			case 'item':
-			case 'target_item':
-			case 'call':
-				return 'function'
-			case 'text':
-			case 'string':
-			case 'json_value':
-			case 'json_object_key':
-			case 'message_text':
-			case 'str':
-			case 'nbt_value':
-				// case 'value':
-				return 'string'
-			case 'word':
-			case 'key':
-			case 'entity_anchor':
-				return 'property'
-			case 'selector':
-			case 'player_name':
-				return 'class'
-			case 'exclamation':
-			case 'equal':
-			case 'operator':
-				return 'operator'
-			case 'function_signature_argument':
-			case 'objective':
-			case 'team':
-			case 'target_identifier':
-			case 'target_attribute':
-			case 'imported_identifier':
-			case 'identifier':
-			case 'attribute':
-			case 'selector_argument':
-			case 'nbt_compound_key':
-				return 'variable'
-			case 'number':
-			case 'range':
-			case 'int':
-			case 'coordinate':
-			case 'scoreboard_slot':
-			case 'item_slot':
-			case 'vector3':
-			case 'time':
-				return 'number'
-			case 'colon':
-				return 'label'
-			case 'false':
-			case 'true':
-			case 'bool':
-			case 'format_string':
-			case 'interpolation':
-				return 'macro'
-			case 'unpack':
-			case 'nbt_compound':
-			case 'slice':
-			case 'json_array':
-			case 'json_object':
-			case 'json_object_entry':
-			case 'list':
-			case 'lookup':
-			case 'assignment':
-			case 'tuple':
-			case 'expression_binary':
-			case 'expression_unary':
-			case 'nbt_compound_entry':
-			case 'nbt_list':
-				return 'none'
-
-			// default:
-			// 	return 'keyword'
+	private _regexIndoxOf(text: string, regex: RegExp, pos?: number) {
+		if(!pos) pos = 0
+		for(let c = pos; c < text.length; c++) {
+			// console.log(text.substring(pos, c))
+			if(text.charAt(c).match(regex)) return c
 		}
-		return undefined;
+		return -1
 	}
 
+	private _splitCommands(t: Token, i: number, a: Token[], text: string) {
+		if(t.type === 'command') {
+			if(t.value === 'statement') return
+			const end = [...t.start]
+			const pos = t.start[0]
+			const start = text.substring(pos, this._regexIndoxOf(text, /[\s\n]+/g, pos))
+			// console.log(start)
+			if(start != '') {
+				end[0] += start.length
+				end[2] += start.length
+
+				a.push({
+					type: 'command_start',
+					start: t.start,
+					end: end,
+					value: start
+				})
+				// console.log(a[a.length - 1])
+			}
+		}
+	}
 
 	private async _parseText(text: string, uri: vscode.Uri): Promise<IParsedToken[][]> {
 		if (!extension) return []
@@ -190,16 +132,19 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 		// fs.writeFileSync(this.asAbsolutePath('input.json'), JSON.stringify(JSON.parse(json), null, 2))
 		let tempTokens: Token[] = JSON.parse(json)
 		tempTokens = tempTokens.sort(t => t.end[0] - t.start[0]).reverse()
+		tempTokens.forEach((t, i, a) => this._splitCommands(t, i, a, text))
+
 		let vsTokens: IParsedToken[][] = new Array(text.includes('\n') ? text.split('\n').length + 1 : 1)
 
 		let unknownToken: string[] = []
 		for (let t of tempTokens) {
 			// console.log(t)
 			if (t.type === 'whitespace' || t.type === 'newline' || t.type === 'indent' || t.type === 'escape') continue;
-			let type = this._encodeTokenType(t.type)
+			let type = encodeTokenType(t.type)
 			if (type === undefined) {
 				if (!unknownToken.includes(t.type)) unknownToken.push(t.type)
-				continue;
+				console.log(t.type, t.value)
+				type = 'none'
 			}
 
 			const lines = text.split('\n').slice(t.start[1] - 1, t.end[1])

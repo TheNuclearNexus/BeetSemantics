@@ -5,7 +5,7 @@ import json
 from sre_compile import isstring
 from typing import Dict, List, Union, overload
 from mecha import *
-from mecha.contrib.bolt import *
+from bolt import *
 from beet.core.utils import snake_case
 from tokenstream import SourceLocation
 
@@ -82,7 +82,7 @@ simple_types = (
     AstSelector,
     AstSelectorAdvancementMatch,
     AstSelectorAdvancementPredicateMatch,
-    AstSelectorArgument,
+    # AstSelectorArgument,
     AstSelectorScoreMatch,
     AstSelectorScores,
     AstSlice,
@@ -163,6 +163,10 @@ class TokenHighlighter(Reducer):
     @rule(AstInterpolation)
     def interpolation(self, node: AstInterpolation):    
         self.addTokenFromNode(snake_case(node.__class__.__name__[3:]), node, node.value.__class__.__name__)
+    
+    @rule(AstSelectorArgument)
+    def selector_argument(self, node: AstSelectorArgument):
+        self.addTokenFromNode('selector_argument', node, snake_case(node.value.__class__.__name__[3:]))
     
     @rule(AstFormatString)
     def format_string(self, node: AstFormatString):

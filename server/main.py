@@ -45,7 +45,7 @@ def sortByTokenLength(t):
     return t['end'][0] - t['start'][0]
     
 def grabTokens():
-    with run_beet({"pipeline": ["main.setupTokens", "mecha"], "require": ["mecha.contrib.bolt"]}) as ctx:
+    with run_beet({"pipeline": ["main.setupTokens", "mecha"], "require": ["bolt"]}) as ctx:
         tokens: List[Dict] = ctx.meta["tokens"] 
         # tokens.sort(key=sortByTokenLength, reverse=True)
         return json.dumps(tokens, indent=2)    

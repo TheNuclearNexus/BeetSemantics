@@ -192,6 +192,7 @@ say keyword_arguments
 for node in generate_tree(range(8), name="small_tree"):
     append function node.parent:
         if node.partition():
+            if score @s hi matches 0
             if score @s thingy matches node.range function node.children
         else:
             if score @s thingy matches node.range say node.value
