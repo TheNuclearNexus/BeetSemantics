@@ -19,6 +19,7 @@
 		"Programming Languages"
 	],
 	"activationEvents": [
+		"onLanguage:bolt",
 		"onLanguage:mcfunction"
 	],
 	"main": "./out/extension.js",
@@ -28,6 +29,13 @@
 				"id": "mcfunction",
 				"extensions": [
 					".mcfunction"
+				],
+				"configuration": "./language-configuration.json"
+			},
+			{
+				"id": "bolt",
+				"extensions": [
+					".bolt"
 				],
 				"configuration": "./language-configuration.json"
 			}

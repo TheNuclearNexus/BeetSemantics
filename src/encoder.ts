@@ -51,9 +51,9 @@ export function encodeTokenType(tokenType: string): string | undefined {
 		case 'attribute':
 		case 'nbt_compound_key':
 		case 'advancement_predicate':
-		case 'nbt_path_key':
 			return 'variable'
 		case 'number':
+		case 'uuid':
 		case 'range':
 		case 'int':
 		case 'coordinate':
@@ -61,6 +61,12 @@ export function encodeTokenType(tokenType: string): string | undefined {
 		case 'item_slot':
 		case 'vector3':
 		case 'time':
+		case 'nbt_path_subscript':
+		case 'byte':
+		case 'short':
+		case 'long':
+		case 'float':
+		case 'double':
 			return 'number'
 		case 'colon':
 			return 'label'
@@ -90,6 +96,8 @@ export function encodeTokenType(tokenType: string): string | undefined {
 		case 'dict':
 		case 'dict_item':
 		case 'nbt_path':
+		case 'scoreboard_operation':
+		case 'nbt_path_key':
 			return 'none'
 
 		// default:
