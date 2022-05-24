@@ -28,13 +28,13 @@ class TokenExtractor:
 
 
 
-def setupTokens(ctx: Context):    
+def setupTokens(ctx: Context, function: str):    
     mc = ctx.inject(Mecha)
     # mc.spec.parsers["root"] = TokenExtractor(mc.spec.parsers["root"], ctx)
     # mc.spec.parsers["nested_root"] = TokenExtractor(mc.spec.parsers["nested_root"], ctx)
     
   
-    mc.database.current = Function(sys.argv[1])
+    mc.database.current = Function(function)
         
     mc.database[mc.database.current] = CompilationUnit(resource_location="dummy:foo")
     # mc.parse(mc.database.current)
@@ -46,7 +46,7 @@ def setupTokens(ctx: Context):
 def sortByTokenLength(t):
     return t['end'][0] - t['start'][0]
     
-def grabTokens():
+def grabTokens(function: str, config: str):
     # if(sys.argv[2] != None):
     #     if(sys.argv[2].endswith('json')):
     #         config = json.load(open(sys.argv[2]))
@@ -55,15 +55,26 @@ def grabTokens():
     
     # os.chdir(os.path.dirname(sys.argv[2]))
     
-    config = {"require": ["bolt"]}
-    if(len(sys.argv) > 2):
-        config = sys.argv[2]
+    if(config == ''):
+        config = {"require": ["bolt"]}
     
-    with run_beet(config) as ctx:
-        setupTokens(ctx)
-        tokens: List[Dict] = ctx.meta["tokens"] 
-        # tokens.sort(key=sortByTokenLength, reverse=True)
-        return json.dumps(tokens, indent=2)    
+    try:
+        with run_beet(config) as ctx:
+            setupTokens(ctx, function)
+            tokens: List[Dict] = ctx.meta["tokens"] 
+            # tokens.sort(key=sortByTokenLength, reverse=True)
+            return {'status': 'ok', 'tokens': tokens}
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
+
+for line in sys.stdin:
+    request = json.loads(line)
     
-print(grabTokens())
-# grabTokens()
+    if request["mode"] == 'tokens':
+        function = request["text"]
+        config = request["config"] if 'config' in request else ''
+        # sys.stdin.flush()
+        print(json.dumps(grabTokens(function, config)))
+        # print(function, config)
+    # print(line)
+    sys.stdout.flush()

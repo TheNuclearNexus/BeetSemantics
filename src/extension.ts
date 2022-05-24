@@ -30,10 +30,41 @@ const legend = (function () {
 	return new vscode.SemanticTokensLegend(tokenTypesLegend, tokenModifiersLegend);
 })();
 
+let shell: PythonShell
+
+function requestFromPython(command: string): Promise<string> {
+	return new Promise((resolve, reject) => {
+		if (shell.terminated) reject('error')
+		shell.on('message', (message: string) => {
+			resolve(message);
+		});
+		shell.send(command);
+		// setTimeout(() => { reject('error') }, 200)
+	});
+}
+
 export function activate(context: vscode.ExtensionContext) {
-	context.asAbsolutePath
+	const python = vscode.workspace.getConfiguration("python")
+	let path: string | undefined = python.get("pythonPath")
+
+	if (path === undefined || !fs.existsSync(path))
+		path = python.get("defaultInterpreterPath")
+
+	shell = new PythonShell(context.asAbsolutePath('server/main.py'), { pythonPath: path })
+	shell.on('error', (err) => { console.log(err) })
+	shell.on('pythonError', (err) => { console.log(err) })
+	shell.on('message', (msg) => console.log('From init on msg: ', msg.substring(0, 100)))
+	// context.asAbsolutePath
 	context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider({ language: 'mcfunction' }, new DocumentSemanticTokensProvider(context), legend));
 	context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider({ language: 'bolt' }, new DocumentSemanticTokensProvider(context), legend));
+}
+
+export function deactivate() {
+	if (shell) {
+		shell.end(() => {
+			console.log('Python shell ended')
+		})
+	}
 }
 
 interface IParsedToken {
@@ -52,28 +83,28 @@ interface Token {
 
 let prevTokens: [string, IParsedToken[][]] = ['', []]
 let prevDocument: string
-let beetConfig: string|undefined
+let beetConfig: string | undefined
 class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensProvider {
 	asAbsolutePath
 	constructor(context: vscode.ExtensionContext) {
 		this.asAbsolutePath = context.asAbsolutePath
 	}
 	async provideDocumentSemanticTokens(document: vscode.TextDocument, token: vscode.CancellationToken): Promise<vscode.SemanticTokens> {
-		if(document.uri.toString() !== prevDocument && document.uri.scheme === 'file') {
+		if (document.uri.toString() !== prevDocument && document.uri.scheme === 'file') {
 			prevDocument = document.uri.fsPath
 			beetConfig = path.dirname(prevDocument)
 			let iters = 0;
-			while(!(fs.existsSync(beetConfig + 'beet.json') || fs.existsSync(beetConfig + 'beet.yaml')) && iters < 20) {
+			while (!(fs.existsSync(beetConfig + 'beet.json') || fs.existsSync(beetConfig + 'beet.yaml')) && iters < 20) {
 				let newConfig = path.join(beetConfig, '../')
-				if(newConfig === beetConfig) break;
+				if (newConfig === beetConfig) break;
 				beetConfig = newConfig
 				iters++
 			}
-			
-			if(fs.existsSync(beetConfig + 'beet.json')) beetConfig = beetConfig + 'beet.json'
-			else if(fs.existsSync(beetConfig + 'beet.yaml')) beetConfig = beetConfig + 'beet.yaml'
+
+			if (fs.existsSync(beetConfig + 'beet.json')) beetConfig = beetConfig + 'beet.json'
+			else if (fs.existsSync(beetConfig + 'beet.yaml')) beetConfig = beetConfig + 'beet.yaml'
 			else {
-				vscode.window.showErrorMessage('Could not find beet.json or beet.yaml!')
+				// vscode.window.showErrorMessage('Could not find beet.json or beet.yaml!')
 				beetConfig = undefined;
 			}
 		}
@@ -107,22 +138,22 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 
 
 	private _regexIndoxOf(text: string, regex: RegExp, pos?: number) {
-		if(!pos) pos = 0
-		for(let c = pos; c < text.length; c++) {
+		if (!pos) pos = 0
+		for (let c = pos; c < text.length; c++) {
 			// console.log(text.substring(pos, c))
-			if(text.charAt(c).match(regex)) return c
+			if (text.charAt(c).match(regex)) return c
 		}
 		return -1
 	}
 
 	private _splitCommands(t: Token, i: number, a: Token[], text: string) {
-		if(t.type === 'command') {
-			if(t.value === 'statement') return
+		if (t.type === 'command') {
+			if (t.value === 'statement') return
 			const end = [...t.start]
 			const pos = t.start[0]
 			const start = text.substring(pos, this._regexIndoxOf(text, /[\s\n]+/g, pos))
 			// console.log(start)
-			if(start != '') {
+			if (start != '') {
 				end[0] += start.length
 				end[2] += start.length
 
@@ -140,26 +171,18 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 	private async _parseText(text: string, uri: vscode.Uri): Promise<IParsedToken[][]> {
 		if (!extension) return []
 
-		let json = await this.getTokensJson(text)
-		if (json === 'error') {
-			console.log('error')
-			if (prevTokens[0] === uri.toString()) {
-				return prevTokens[1]
-			} else {
-				return []
-			}
+		console.log('Parsing ' + uri.toString())
+		let rawJson = await requestFromPython(JSON.stringify({ mode: 'tokens', text: text, config: beetConfig }))
+		console.log(rawJson)
+		let json = JSON.parse(rawJson)
+		
+		if (json.status === 'error') {
+			vscode.window.showErrorMessage(json.message.split('\n\n')[1]);
+			return prevTokens[1]
 		}
-
-		try {
-			JSON.parse(json)
-		}
-		catch (e) {
-			console.log('err')
-		}
-
 
 		// fs.writeFileSync(this.asAbsolutePath('input.json'), JSON.stringify(JSON.parse(json), null, 2))
-		let tempTokens: Token[] = JSON.parse(json)
+		let tempTokens: Token[] = json.tokens
 		console.log(tempTokens.length)
 		tempTokens = tempTokens.sort(t => t.end[0] - t.start[0]).reverse()
 		console.log('sorted')
@@ -167,7 +190,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 		console.log('split')
 
 		let vsTokens: IParsedToken[][] = new Array(text.includes('\n') ? text.split('\n').length + 1 : 1)
-		
+
 		let unknownToken: string[] = []
 		for (let t of tempTokens) {
 			// console.log(t)
@@ -220,7 +243,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			if (path === undefined || !fs.existsSync(path))
 				path = python.get("defaultInterpreterPath")
 
-			PythonShell.run(this.asAbsolutePath('server/main.py'), { args: beetConfig !== undefined ? [text, beetConfig] : [text], pythonPath: path }, (err, output) => {
+			const shell = PythonShell.run(this.asAbsolutePath('server/main.py'), { args: beetConfig !== undefined ? [text, beetConfig] : [text], pythonPath: path }, (err, output) => {
 				if (err != undefined) {
 					const traceback = err.traceback.toString();
 
@@ -247,6 +270,10 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 				resolve(json);
 
 			});
+			shell.send(text);
+			shell.once('message', (msg) => {
+
+			})
 		});
 
 	}
