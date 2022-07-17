@@ -102,7 +102,7 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			prevDocument = document.uri.fsPath
 			beetConfig = path.dirname(prevDocument)
 			let iters = 0;
-			while (!(fs.existsSync(beetConfig + 'beet.json') || fs.existsSync(beetConfig + 'beet.yaml')) && iters < 20) {
+			while (!(fs.existsSync(beetConfig + 'beet.json') || fs.existsSync(beetConfig + 'beet.yaml') || fs.existsSync(beetConfig + 'beet.yml')) && iters < 20) {
 				let newConfig = path.join(beetConfig, '../')
 				if (newConfig === beetConfig) break;
 				beetConfig = newConfig
@@ -111,6 +111,8 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 
 			if (fs.existsSync(beetConfig + 'beet.json')) beetConfig = beetConfig + 'beet.json'
 			else if (fs.existsSync(beetConfig + 'beet.yaml')) beetConfig = beetConfig + 'beet.yaml'
+			else if (fs.existsSync(beetConfig + 'beet.yml')) beetConfig = beetConfig + 'beet.yml'
+
 			else {
 				// vscode.window.showErrorMessage('Could not find beet.json or beet.yaml!')
 				beetConfig = undefined;
