@@ -24,6 +24,17 @@
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"configuration": {
+			"title": "Beet Semantics",
+			"properties": {
+				"beet-semantics.python": {
+					"type": "string",
+					"default": "",
+					"description": "Specify path to python interpreter to use for semantic highlighting.",
+					"editPresentation": "singlelineText"
+				}
+			}
+		},
 		"languages": [
 			{
 				"id": "mcfunction",

@@ -44,17 +44,25 @@ function requestFromPython(command: string): Promise<string> {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	const python = vscode.workspace.getConfiguration("python")
-	let path: string | undefined = python.get("defaultInterpreterPath")
+	const beet = vscode.workspace.getConfiguration('beet-semantics')
+	let path: string | undefined = beet.get("python")
 
-	// if (path === undefined || !fs.existsSync(path))
-		// path = python.get("defaultInterpreterPath")
+	if (path === undefined || path === "") {
+		const python = vscode.workspace.getConfiguration('python')
+		path = python.get("defaultInterpreterPath")
+		if (path === undefined || path === "") {
+			path = "python"
+			vscode.window.showErrorMessage("Beet Semantics: Python interpreter not found. Falling back to 'python'.")
+		}
+	}
+	vscode.window.showInformationMessage(`Beet Semantics: Using Python interpreter at '${path}'`)
 
 	shell = new PythonShell(context.asAbsolutePath('server/main.py'), { pythonPath: path })
 	shell.on('error', (err) => { console.log(err); vscode.window.showErrorMessage(err.message); })
 	shell.on('pythonError', (err) => { console.log(err); vscode.window.showErrorMessage(err.message) })
 	shell.on('message', (msg) => console.log('From init on msg: ', msg.substring(0, 100)))
 	// context.asAbsolutePath
+	
 	context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider({ language: 'mcfunction' }, new DocumentSemanticTokensProvider(context), legend));
 	context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider({ language: 'bolt' }, new DocumentSemanticTokensProvider(context), legend));
 }
