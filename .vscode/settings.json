@@ -1,3 +1,4 @@
 {
-	"editor.insertSpaces": false
+	"editor.insertSpaces": false,
+	"python.defaultInterpreterPath": "B:\\Programs\\Python310\\python.exe"
 }

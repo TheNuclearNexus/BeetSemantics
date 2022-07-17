@@ -2,7 +2,7 @@
 	"name": "highlighter",
 	"displayName": "Beet Semantics",
 	"description": "Proof of concept semantic highlighter for beet",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"publisher": "mcbeet",
 	"author": "TheNuclearNexus",
 	"private": true,

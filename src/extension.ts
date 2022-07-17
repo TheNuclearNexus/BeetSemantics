@@ -35,7 +35,7 @@ let shell: PythonShell
 function requestFromPython(command: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		if (shell.terminated) reject('error')
-		shell.on('message', (message: string) => {
+		shell.once('message', (message: string) => {
 			resolve(message);
 		});
 		shell.send(command);
@@ -45,14 +45,14 @@ function requestFromPython(command: string): Promise<string> {
 
 export function activate(context: vscode.ExtensionContext) {
 	const python = vscode.workspace.getConfiguration("python")
-	let path: string | undefined = python.get("pythonPath")
+	let path: string | undefined = python.get("defaultInterpreterPath")
 
-	if (path === undefined || !fs.existsSync(path))
-		path = python.get("defaultInterpreterPath")
+	// if (path === undefined || !fs.existsSync(path))
+		// path = python.get("defaultInterpreterPath")
 
 	shell = new PythonShell(context.asAbsolutePath('server/main.py'), { pythonPath: path })
-	shell.on('error', (err) => { console.log(err) })
-	shell.on('pythonError', (err) => { console.log(err) })
+	shell.on('error', (err) => { console.log(err); vscode.window.showErrorMessage(err.message); })
+	shell.on('pythonError', (err) => { console.log(err); vscode.window.showErrorMessage(err.message) })
 	shell.on('message', (msg) => console.log('From init on msg: ', msg.substring(0, 100)))
 	// context.asAbsolutePath
 	context.subscriptions.push(vscode.languages.registerDocumentSemanticTokensProvider({ language: 'mcfunction' }, new DocumentSemanticTokensProvider(context), legend));

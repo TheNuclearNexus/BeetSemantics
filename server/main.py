@@ -3,8 +3,9 @@ import json
 from lib2to3.pgen2 import token
 import os
 import sys
+from types import TracebackType
 from typing import Any, Dict, List
-from mecha import CompilationUnit, Parser, Mecha
+from mecha import CompilationError, CompilationUnit, DiagnosticError, DiagnosticErrorSummary, Parser, Mecha
 from beet import Context, Function, run_beet
 from tokenstream import TokenStream
 import yaml
@@ -46,7 +47,7 @@ def setupTokens(ctx: Context, function: str):
 def sortByTokenLength(t):
     return t['end'][0] - t['start'][0]
     
-def grabTokens(function: str, config: str):
+def grabTokens(function: str, configPath: str):
     # if(sys.argv[2] != None):
     #     if(sys.argv[2].endswith('json')):
     #         config = json.load(open(sys.argv[2]))
@@ -55,17 +56,33 @@ def grabTokens(function: str, config: str):
     
     # os.chdir(os.path.dirname(sys.argv[2]))
     
-    if(config == ''):
-        config = {"require": ["bolt"]}
+    config = {}
     
+    if(configPath != ''):
+        text = open(configPath, 'r').read()
+        config = json.loads(text) if configPath.endswith('json') else yaml.load(text, Loader=yaml.FullLoader)
+        if('output' in config):
+            config['output'] = None
+        os.chdir(os.path.dirname(configPath))
     try:
         with run_beet(config) as ctx:
             setupTokens(ctx, function)
             tokens: List[Dict] = ctx.meta["tokens"] 
             # tokens.sort(key=sortByTokenLength, reverse=True)
             return {'status': 'ok', 'tokens': tokens}
+    except DiagnosticErrorSummary as e:
+        error = ''
+        for i in range(len(e.diagnostics.exceptions)):
+            execption = e.diagnostics.exceptions[i]
+            error += f'-------\n{type(e)} {i}:\n{execption.message}'
+            
+        return {'status': 'error', 'message': error}
+    except SyntaxError as e:
+        return {'status': 'error', 'message': f'-------\n{type(e)}:\n{str(e)}'}
+    except ValueError as e:
+        return {'status': 'error', 'message': f'-------\n{type(e)}:\n{str(e)}'}
     except Exception as e:
-        return {'status': 'error', 'message': str(e)}
+        return {'status': 'error', 'message': f'-------\n{type(e)}:\n{str(e)}'}
 
 for line in sys.stdin:
     request = json.loads(line)

@@ -13,7 +13,7 @@
 #                                           #
 #############################################
 
-function_tag minecraft:load:
+append function_tag minecraft:load:
     values: ["#load:_private/load"]
 
 function_tag load:_private/load:
@@ -64,7 +64,6 @@ function ./load/enumerate:
     function ./major
 
     scoreboard players reset #rx.playerdb.set load.status
-
 
 for loop in loop_info(version_parts):
     suffix = version_parts[loop.index]
