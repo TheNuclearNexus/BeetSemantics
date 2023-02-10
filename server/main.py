@@ -1,16 +1,18 @@
-from dataclasses import dataclass
 import json
-from lib2to3.pgen2 import token
 import os
 import sys
+from dataclasses import dataclass
+from lib2to3.pgen2 import token
 from types import TracebackType
 from typing import Any, Dict, List
-from mecha import CompilationError, CompilationUnit, DiagnosticError, DiagnosticErrorSummary, Parser, Mecha
-from beet import Context, Function, run_beet
-from tokenstream import TokenStream
-import yaml
 
+import yaml
+from beet import Context, Function, run_beet
+from mecha import (CompilationError, CompilationUnit, DiagnosticError,
+                   DiagnosticErrorSummary, Mecha, Parser)
 from TokenHighlighter import TokenHighlighter
+from tokenstream import TokenStream
+
 
 @dataclass
 class TokenExtractor:
@@ -91,7 +93,7 @@ for line in sys.stdin:
         function = request["text"]
         config = request["config"] if 'config' in request else ''
         # sys.stdin.flush()
-        print(json.dumps(grabTokens(function, config)))
+        print("data: " + json.dumps(grabTokens(function, config)))
         # print(function, config)
     # print(line)
     sys.stdout.flush()

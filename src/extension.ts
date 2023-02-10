@@ -35,8 +35,9 @@ let shell: PythonShell
 function requestFromPython(command: string): Promise<string> {
 	return new Promise((resolve, reject) => {
 		if (shell.terminated) reject('error')
-		shell.once('message', (message: string) => {
-			resolve(message);
+		shell.on('message', (message: string) => {
+			if(message.startsWith('data: '))
+				resolve(message.substring(6));
 		});
 		shell.send(command);
 		// setTimeout(() => { reject('error') }, 200)
@@ -140,6 +141,8 @@ class DocumentSemanticTokensProvider implements vscode.DocumentSemanticTokensPro
 			case 'objective':
 			case 'team':
 			case 'wildcard':
+			case 'imported_item':
+			case 'imported_identifier':
 				return ['readonly']
 		}
 		return []

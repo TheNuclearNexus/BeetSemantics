@@ -34,6 +34,8 @@ export function encodeTokenType(tokenType: string): string | undefined {
 			return 'property'
 		case 'selector':
 		case 'player_name':
+		case 'class_name':
+		case 'decorator':
 			return 'class'
 		case 'exclamation':
 		// case 'equal':

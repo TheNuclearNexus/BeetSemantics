@@ -104,6 +104,10 @@ simple_types = (
     AstVibrationParticleParameters,
     AstWildcard,
     AstWord,
+    AstClassName,
+    AstClassRoot,
+    AstClassBases,
+    AstDecorator,
     
 )
 
